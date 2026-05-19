@@ -40,13 +40,52 @@ export default function RockefellerSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const mockupRef  = useRef<HTMLDivElement>(null);
   const copyRef    = useRef<HTMLDivElement>(null);
+  const stepsContainerRef = useRef<HTMLDivElement>(null);
 
-  const [activeStep, setActiveStep] = useState<number>(-1);
+  // States for Crono and Cursor Height Interaction
+  const [activeStep, setActiveStep] = useState<number>(0);
+  const [mouseY, setMouseY] = useState<number>(0);
+  const [isHovering, setIsHovering] = useState<boolean>(false);
+  const [hoverActiveStep, setHoverActiveStep] = useState<number | null>(null);
 
+  // Automatic Cronómetro Timer (loops steps 0 -> 1 -> 2)
+  useEffect(() => {
+    if (isHovering) return; // Pause cronómetro when user is actively hovering/controlling with cursor Y!
+
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % STEPS.length);
+    }, 4000); // Cycles every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [isHovering]);
+
+  // Synchronize mockup phase changes with activeStep when NOT hovering
   const handlePhaseChange = useCallback((phase: Phase) => {
+    if (isHovering) return; // Keep cursor height override during active hover
     const idx = STEPS.findIndex(s => s.phases.includes(phase));
-    setActiveStep(idx);
-  }, []);
+    if (idx >= 0) {
+      setActiveStep(idx);
+    }
+  }, [isHovering]);
+
+  // Cursor Y-position tracking and active step calculation
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!stepsContainerRef.current) return;
+    const rect = stepsContainerRef.current.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    setMouseY(relativeY);
+    setIsHovering(true);
+
+    // Calculate active step based on vertical height partition (3 equal slices)
+    const stepHeight = rect.height / STEPS.length;
+    const stepIndex = Math.max(0, Math.min(STEPS.length - 1, Math.floor(relativeY / stepHeight)));
+    setHoverActiveStep(stepIndex);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setHoverActiveStep(null);
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -67,6 +106,8 @@ export default function RockefellerSection() {
     return () => ctx.revert();
   }, []);
 
+  const currentActiveStep = isHovering ? hoverActiveStep : activeStep;
+
   return (
     <>
       <RockefellerBanner sectionRef={sectionRef} />
@@ -75,7 +116,7 @@ export default function RockefellerSection() {
         id="rockefeller"
         data-section="rockefeller"
         ref={sectionRef}
-        className="relative w-full min-h-screen flex items-center overflow-hidden py-24"
+        className="relative w-full min-h-screen flex items-center overflow-hidden py-24 bg-[#050505]"
       >
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -88,9 +129,12 @@ export default function RockefellerSection() {
         {/* Grid */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-[3fr_2fr] gap-14 items-center">
 
-          {/* Left — mockup */}
+          {/* Left — mockup with dynamic hoveredStep feedback */}
           <div ref={mockupRef} className="flex items-center justify-center" style={{ paddingLeft: '6%' }}>
-            <RockefellerMockup onPhaseChange={handlePhaseChange} />
+            <RockefellerMockup 
+              onPhaseChange={handlePhaseChange} 
+              hoveredStep={isHovering ? hoverActiveStep : null}
+            />
           </div>
 
           {/* Right — guided narrative */}
@@ -158,11 +202,41 @@ export default function RockefellerSection() {
               Precios dinámicos para hostelería. Cada pedido mueve el mercado.
             </p>
 
-            {/* ═══════════ GUIDED STEPS ═══════════ */}
-            <div style={{ marginTop: 42, width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
+            {/* ═══════════ INTERACTIVE GUIDED STEPS ═══════════ */}
+            <div 
+              ref={stepsContainerRef}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              className="group/steps"
+              style={{ 
+                marginTop: 42, 
+                width: '100%', 
+                maxWidth: 440, 
+                display: 'flex', 
+                flexDirection: 'column',
+                position: 'relative',
+                cursor: 'pointer',
+              }}
+            >
+              {/* Dynamic sliding golden neon spotlight that follows the exact cursor Y position */}
+              {isHovering && (
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: mouseY - 65,
+                  height: 130,
+                  background: 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,218,0,0.12) 0%, rgba(255,218,0,0.03) 45%, transparent 70%)',
+                  pointerEvents: 'none',
+                  zIndex: 1,
+                  transition: 'top 0.12s cubic-bezier(0.16, 1, 0.3, 1)', // ultra-smooth physical drag lag
+                  mixBlendMode: 'screen',
+                }} />
+              )}
+
               {STEPS.map((step, i) => {
-                const isActive = i === activeStep;
-                const isPast   = activeStep >= 0 && i < activeStep;
+                const isActive = i === currentActiveStep;
+                const isPast   = currentActiveStep !== null && currentActiveStep >= 0 && i < currentActiveStep;
 
                 return (
                   <div
@@ -174,8 +248,8 @@ export default function RockefellerSection() {
                       paddingTop: 20,
                       paddingBottom: 24,
                       borderTop: `1px solid ${isActive ? GOLD : 'rgba(255,255,255,0.06)'}`,
-                      boxShadow: isActive ? `inset 0 1px 0 rgba(255,218,0,0.2)` : 'none',
-                      transition: 'all 0.5s ease',
+                      boxShadow: isActive ? `inset 0 1px 0 rgba(255,218,0,0.16)` : 'none',
+                      transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                       position: 'relative',
                       overflow: 'hidden',
                     }}
@@ -184,7 +258,7 @@ export default function RockefellerSection() {
                     {isActive && (
                       <div style={{
                         position: 'absolute', inset: 0,
-                        background: `linear-gradient(180deg, rgba(201,162,39,0.08) 0%, transparent 100%)`,
+                        background: `linear-gradient(180deg, rgba(201,162,39,0.06) 0%, transparent 100%)`,
                         pointerEvents: 'none',
                       }} />
                     )}
@@ -196,9 +270,9 @@ export default function RockefellerSection() {
                       fontWeight: 300,
                       color: isActive ? GOLD2 : isPast ? `${GOLD}55` : 'rgba(255,255,255,0.15)',
                       letterSpacing: '0.02em',
-                      transition: 'all 0.5s ease',
+                      transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                       textShadow: isActive ? `0 0 12px ${GOLD}66` : 'none',
-                      paddingTop: 5, // optical alignment with serif title
+                      paddingTop: 5, 
                       position: 'relative',
                       zIndex: 2,
                     }}>
@@ -208,7 +282,7 @@ export default function RockefellerSection() {
                     {/* ── Step content ── */}
                     <div style={{
                       display: 'flex', flexDirection: 'column',
-                      transition: 'opacity 0.5s ease',
+                      transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                       opacity: isActive ? 1 : isPast ? 0.6 : 0.3,
                       position: 'relative',
                       zIndex: 2,
@@ -221,7 +295,7 @@ export default function RockefellerSection() {
                         color: isActive ? '#fff' : 'rgba(255,240,180,0.5)',
                         letterSpacing: '0.02em',
                         lineHeight: 1.2,
-                        transition: 'all 0.5s ease',
+                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                       }}>
                         {step.title}
                       </div>
@@ -235,7 +309,7 @@ export default function RockefellerSection() {
                         color: isActive ? 'rgba(255,240,180,0.65)' : 'rgba(255,240,180,0.3)',
                         lineHeight: 1.6,
                         maxWidth: 320,
-                        transition: 'all 0.5s ease',
+                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                       }}>
                         {step.sub}
                       </div>

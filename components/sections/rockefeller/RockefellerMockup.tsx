@@ -34,9 +34,10 @@ const tbg = (t: string) =>
 
 interface Props {
   onPhaseChange?: (phase: Phase) => void;
+  hoveredStep?: number | null;
 }
 
-export default function RockefellerMockup({ onPhaseChange }: Props) {
+export default function RockefellerMockup({ onPhaseChange, hoveredStep }: Props) {
   const [cocktails,  setCocktails]  = useState<C[]>(SEED);
   const [phase,      _setPhase]     = useState<Phase>('idle');
   const [activeId,   setActiveId]   = useState<string | null>(null);
@@ -126,13 +127,28 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
 
   /* auto loop */
   useEffect(() => {
-    autoRef.current = setTimeout(() => trigger(SEED[0].id), 3000);
+    // Only run the auto loop if the user is not actively hovering over the steps narrative!
+    if (hoveredStep === null || hoveredStep === undefined) {
+      autoRef.current = setTimeout(() => trigger(SEED[0].id), 3000);
+    }
     return () => {
       timers.current.forEach(clearTimeout);
       if (sigIv.current) clearInterval(sigIv.current);
       if (autoRef.current) clearTimeout(autoRef.current);
     };
-  }, [trigger]);
+  }, [trigger, hoveredStep]);
+
+  /* dynamic mock-up feedback when hovering over narrative steps */
+  const effectiveHoveredStep = hoveredStep !== undefined ? hoveredStep : null;
+  const isPhoneHovered = effectiveHoveredStep === 0;
+  const isSignalHovered = effectiveHoveredStep === 1;
+  const isTvHovered = effectiveHoveredStep === 2;
+
+  // Phone is visually active if step 1 is hovered, step 2 is hovered (signal traveling), or phone phases are active
+  const phoneActive = isPhoneHovered || isSignalHovered || phase === 'pre-select' || phase === 'select' || phase === 'send';
+  // TV is visually active if step 3 is hovered, step 2 is hovered, or TV phases are active
+  const tvActive    = isTvHovered || isSignalHovered || phase === 'pre-receive' || phase === 'receive';
+  const tvFlash     = phase === 'receive' || isTvHovered;
 
   /* entrance detection — fire once when the mockup scrolls into view */
   useEffect(() => {
@@ -148,9 +164,6 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
 
   const featured = cocktails[0];
   const rest     = cocktails.slice(1);
-  const phoneActive = phase === 'pre-select' || phase === 'select' || phase === 'send';
-  const tvActive    = phase === 'pre-receive' || phase === 'receive';
-  const tvFlash     = phase === 'receive';
 
   /* ─────────────────── RENDER ─────────────────── */
   return (
@@ -171,7 +184,7 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
       <div style={{
         width: 142, height: 310, borderRadius: 22, flexShrink: 0,
         background: BG,
-        border: `1.5px solid rgba(255,218,0,0.32)`,
+        border: `1.5px solid ${phoneActive ? 'rgba(255,218,0,0.78)' : 'rgba(255,218,0,0.32)'}`,
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transform: phoneActive 
           ? 'perspective(800px) rotateY(-18deg) rotateX(2deg) scale(1.05) translateZ(30px) translateY(-10px)' 
@@ -216,8 +229,8 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
         {/* cocktail rows */}
         <div style={{ flex: 1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
           {cocktails.slice(0, 6).map((c) => {
-            const isActive = c.id === activeId;
-            const isSending = isActive && (phase === 'select' || phase === 'send');
+            const isActive = c.id === activeId || (isPhoneHovered && c.id === 'of');
+            const isSending = isActive && (phase === 'select' || phase === 'send' || isPhoneHovered);
             return (
               <div key={c.id} style={{
                 flex: 1, display:'flex', alignItems:'center', padding:'0 6px', gap: 4,
@@ -258,7 +271,7 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
                     borderRadius: 4, fontSize: 8, fontFamily:'monospace', fontWeight: 900,
                     padding: '2px 5px', cursor: phase === 'idle' ? 'pointer' : 'default',
                     lineHeight: 1, transition:'all 0.2s', flexShrink: 0,
-                    animation: isSending && phase === 'send' ? 'rk-btn-pulse 0.5s ease-in-out infinite' : 'none',
+                    animation: isSending && (phase === 'send' || isPhoneHovered) ? 'rk-btn-pulse 0.5s ease-in-out infinite' : 'none',
                   }}
                 >▲</button>
               </div>
@@ -271,9 +284,10 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
           height: 26, background: '#0d0b00', borderTop: `1px solid ${G}18`,
           display:'flex', alignItems:'center', justifyContent:'center', flexShrink: 0,
         }}>
-          {phase === 'send'    && <span style={{ fontFamily:'monospace', fontSize: 6.5, color: G, animation:'rk-pulse 0.5s infinite', letterSpacing:'0.1em' }}>ENVIANDO...</span>}
-          {phase === 'receive' && <span style={{ fontFamily:'monospace', fontSize: 6.5, color: GR }}>✓ PRECIO ACTUALIZADO</span>}
-          {(phase === 'idle' || phase === 'select') && (
+          {isPhoneHovered && <span style={{ fontFamily:'monospace', fontSize: 6.5, color: G, letterSpacing:'0.05em' }}>● SELECCIONANDO BEBIDA</span>}
+          {!isPhoneHovered && phase === 'send'    && <span style={{ fontFamily:'monospace', fontSize: 6.5, color: G, animation:'rk-pulse 0.5s infinite', letterSpacing:'0.1em' }}>ENVIANDO...</span>}
+          {!isPhoneHovered && phase === 'receive' && <span style={{ fontFamily:'monospace', fontSize: 6.5, color: GR }}>✓ PRECIO ACTUALIZADO</span>}
+          {!isPhoneHovered && (phase === 'idle' || phase === 'select') && (
             <span style={{ fontFamily:'monospace', fontSize: 6.5, color:`${G}3a` }}>
               {phase === 'select' ? 'Procesando...' : 'Sistema activo · Toca ▲ para subir'}
             </span>
@@ -287,20 +301,23 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
         {/* static track */}
         <div style={{ width:'100%', height: 1, background:`${G}18`, borderRadius: 1 }} />
         {/* animated fill */}
-        {(phase === 'send' || phase === 'receive') && (
+        {(phase === 'send' || phase === 'receive' || isSignalHovered) && (
           <div style={{
             position:'absolute', left: 0, top:'50%', transform:'translateY(-50%)',
-            width:`${sigPct}%`, height: 2,
+            width: isSignalHovered ? '100%' : `${sigPct}%`, height: 2,
             background:`linear-gradient(90deg, ${G2}66, ${G})`,
-            borderRadius: 1, transition:'width 0.03s linear',
+            borderRadius: 1, transition: isSignalHovered ? 'width 0.4s ease' : 'width 0.03s linear',
           }} />
         )}
         {/* traveling dot */}
-        {phase === 'send' && sigPct > 5 && sigPct < 100 && (
+        {(phase === 'send' || isSignalHovered) && (
           <div style={{
-            position:'absolute', left:`calc(${sigPct}% - 3px)`, top:'50%', transform:'translateY(-50%)',
+            position:'absolute', 
+            left: isSignalHovered ? '50%' : `calc(${sigPct}% - 3px)`, 
+            top:'50%', transform:'translateY(-50%)',
             width: 7, height: 7, borderRadius:'50%',
             background: G, boxShadow:`0 0 10px ${G}, 0 0 22px ${G}88`,
+            animation: isSignalHovered ? 'rk-pulse 1s infinite' : 'none',
           }} />
         )}
       </div>
@@ -402,7 +419,7 @@ export default function RockefellerMockup({ onPhaseChange }: Props) {
               <div style={{ fontFamily: 'monospace', fontSize: 7, color: tc(featured.trend) }}>
                 {ta(featured.trend)} {featured.change > 0 ? '+' : ''}{featured.change.toFixed(1)}%
               </div>
-              {featured.id === activeId && tvFlash && (
+              {(featured.id === activeId && tvFlash) && (
                 <div style={{
                   marginTop: 4, fontFamily: 'monospace', fontSize: 7, fontWeight: 800,
                   color: '#000', background: G, padding: '1px 6px', borderRadius: 3, display: 'inline-block',
