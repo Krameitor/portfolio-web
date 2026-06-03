@@ -1,6 +1,7 @@
 import HeroSection from '@/components/sections/HeroSection';
 import RockefellerSection from '@/components/sections/rockefeller/RockefellerSection';
 import { ArrocesSection, OraculusSection, BrioxeSection } from '@/components/sections/ProjectSections';
+import LearningCylinderSection from '@/components/sections/learning/LearningCylinderSection';
 import Footer from '@/components/layout/Footer';
 
 export default function Home() {
@@ -20,6 +21,9 @@ export default function Home() {
 
       {/* Sección 5 — Brioxé (POS) */}
       <BrioxeSection />
+
+      {/* Sección 6 — Aprendizaje y Experiencias Internacionales */}
+      <LearningCylinderSection />
 
       {/* Footer — CTA */}
       <Footer />
