@@ -13,6 +13,7 @@ export default function HeroSection() {
   const containerRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const uiRef = useRef<HTMLDivElement>(null);
+  const epicTitleRef = useRef<HTMLDivElement>(null);
   const { lenis } = useLenis();
 
   const scrollToProjects = useCallback(() => {
@@ -29,7 +30,7 @@ export default function HeroSection() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
     if (!ctx) return;
 
     let animationFrameId: number;
@@ -91,15 +92,7 @@ export default function HeroSection() {
       const staticSunY = height * horizonRatio;
       const sunRadius = Math.min(width, height) * 0.24;
 
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-      skyGrad.addColorStop(0, '#0d021c');
-      skyGrad.addColorStop(0.35, '#190333');
-      skyGrad.addColorStop(horizonRatio - 0.08, '#27084f');
-      skyGrad.addColorStop(horizonRatio, '#420a75');
-      skyGrad.addColorStop(horizonRatio + 0.04, '#07010f');
-      skyGrad.addColorStop(1, '#020004');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
       for (let i = 0; i < numStars; i++) {
         const star = stars[i];
@@ -139,13 +132,12 @@ export default function HeroSection() {
       ctx.closePath();
       ctx.clip();
 
-      ctx.fillStyle = sliceSky;
       for (let i = 0; i < numSlices; i++) {
         const ratio = i / (numSlices - 1);
         const slitY = startSliceY + ratio * totalSliceHeight;
         if (slitY < sliceTopLimit) continue;
         const slitHeight = 2.2 + ratio * 7.5;
-        ctx.fillRect(staticSunX - sunRadius - 30, slitY, sunRadius * 2 + 60, slitHeight);
+        ctx.clearRect(staticSunX - sunRadius - 30, slitY, sunRadius * 2 + 60, slitHeight);
       }
       ctx.restore();
 
@@ -280,13 +272,13 @@ export default function HeroSection() {
       const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
 
       tl.from('.hero-badge', { y: 14, opacity: 0, duration: 0.65 })
-        .from('.hero-title-slot', { y: 36, opacity: 0, duration: 1.05 }, '-=0.3')
+        .from('.hero-epic-name', { y: 400, opacity: 0, duration: 2.2, ease: 'power4.out' }, '-=0.4')
         .from('.hero-headline-line', { y: 24, opacity: 0, duration: 0.9, stagger: 0.1 }, '-=0.65')
         .from('.hero-divider', { scaleX: 0, opacity: 0, duration: 0.6 }, '-=0.45')
         .from('.hero-subtitle', { y: 18, opacity: 0, duration: 0.8 }, '+=0.15')
         .from('.hero-btn', { y: 22, opacity: 0, duration: 0.85, stagger: 0.12 }, '-=0.5');
 
-      gsap.to(uiRef.current, {
+      gsap.to([uiRef.current, epicTitleRef.current], {
         y: -56,
         opacity: 0.12,
         ease: 'none',
@@ -315,53 +307,70 @@ export default function HeroSection() {
       id="hero"
       data-section="hero"
       ref={containerRef}
-      className="relative w-full min-h-screen overflow-hidden bg-[#0d021c]"
-      style={{ perspective: 1000 }}
+      className="relative w-full min-h-screen overflow-hidden"
+      style={{ perspective: 1000, background: 'linear-gradient(to bottom, #0d021c 0%, #190333 35%, #27084f 50%, #420a75 58%, #07010f 62%, #020004 100%)' }}
     >
+      {/* 1. Epic Title behind canvas */}
+      <div
+        ref={epicTitleRef}
+        className="absolute inset-0 z-[1] mx-auto flex min-h-screen w-full max-w-[90rem] flex-col items-center px-5 pb-8 pt-24 sm:px-8 sm:pb-10 sm:pt-28 md:px-12 transform-gpu pointer-events-none"
+      >
+        <div className="hero-ui hero-copy w-full opacity-0 pointer-events-none" aria-hidden>
+          <div className="hero-badge">
+            <span className="hero-badge-dot" />
+            <span className="hero-eyebrow">Disponible</span>
+          </div>
+          <p className="hero-eyebrow mb-2">Desarrollador</p>
+        </div>
+        <h1 className="hero-epic-name" aria-label="Pedro López">
+          Pedro López
+        </h1>
+      </div>
+
+      {/* 2. Canvas with Sun and Grid */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none z-0 filter drop-shadow-[0_0_12px_rgba(176,0,255,0.25)]"
+        className="absolute inset-0 w-full h-full pointer-events-none z-[2] filter drop-shadow-[0_0_12px_rgba(176,0,255,0.25)]"
       />
 
-      <div className="absolute top-0 bottom-0 left-[15%] w-px bg-white/[0.01] pointer-events-none hidden md:block z-[1]" />
-      <div className="absolute top-0 bottom-0 right-[15%] w-px bg-white/[0.01] pointer-events-none hidden md:block z-[1]" />
+      <div className="absolute top-0 bottom-0 left-[15%] w-px bg-white/[0.01] pointer-events-none hidden md:block z-[3]" />
+      <div className="absolute top-0 bottom-0 right-[15%] w-px bg-white/[0.01] pointer-events-none hidden md:block z-[3]" />
 
+      {/* 3. Front UI */}
       <div
         ref={uiRef}
-        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[90rem] flex-col items-center px-5 pb-8 pt-24 sm:px-8 sm:pb-10 sm:pt-28 md:px-12 transform-gpu"
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-[90rem] flex-col items-center px-5 pb-8 pt-24 sm:px-8 sm:pb-10 sm:pt-28 md:px-12 transform-gpu pointer-events-none"
       >
         <div className="hero-ui hero-copy w-full">
-          <div className="hero-badge">
+          <div className="hero-badge pointer-events-auto">
             <span className="hero-badge-dot" aria-hidden />
             <span className="hero-eyebrow">Disponible · 2026</span>
           </div>
 
-          <p className="hero-eyebrow mb-2 tracking-[0.35em] text-white/35">Desarrollador & diseñador</p>
+          <p className="hero-eyebrow mb-2 tracking-[0.35em] text-white/35 pointer-events-auto">Desarrollador & diseñador</p>
 
-          <p className="hero-title-slot" aria-label="Espacio reservado para tu nombre">
-            Tu nombre aquí
-          </p>
+          <div className="h-[clamp(4.25rem,13vw,10.2rem)] mb-[20px]" /> {/* Spacer for title */}
 
-          <p className="hero-headline">
+          <p className="hero-headline pointer-events-auto">
             <span className="hero-headline-line block">
               Creo <span className="hero-headline-accent">experiencias digitales</span>
             </span>
             <span className="hero-headline-line block">que dejan huella.</span>
           </p>
 
-          <div className="hero-divider" aria-hidden />
+          <div className="hero-divider pointer-events-auto" aria-hidden />
         </div>
 
         <div className="hero-sun-spacer w-full pointer-events-none" aria-hidden />
 
-        <div className="hero-ui hero-below-sun w-full">
+        <div className="hero-ui hero-below-sun w-full pointer-events-auto">
           <p className="hero-subtitle">
             <strong>Web, interfaces y productos</strong> a medida — con código limpio, animaciones
             cuidadas y un ojo obsesivo por el detalle.
           </p>
 
           <div className="hero-actions">
-            <a href="mailto:hola@pedro.dev" className="hero-btn hero-btn-contact">
+            <a href="mailto:pedrolm0211@gmail.com" className="hero-btn hero-btn-contact">
               Contacto
             </a>
 

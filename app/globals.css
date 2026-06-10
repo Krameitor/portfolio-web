@@ -90,23 +90,20 @@ html.lenis, html.lenis body {
 }
 
 /* Hueco reservado para el nombre (sustituir cuando lo tengas) */
-.hero-title-slot {
+.hero-epic-name {
   font-family: var(--font-display);
-  font-size: clamp(2.75rem, 8.5vw, 6rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: rgba(255, 255, 255, 0.28);
-  min-height: clamp(3.25rem, 9.5vw, 6.75rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0.15rem 0 0.35rem;
-  padding: 0.35rem 1.75rem;
-  border: 1px dashed rgba(199, 125, 255, 0.32);
-  border-radius: 0.65rem;
-  background: rgba(13, 2, 28, 0.35);
-  text-shadow: none;
+  font-size: clamp(4rem, 13vw, 10rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe74c 35%, #ff7e3c 60%, #ff217c 85%, #b5007d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 30px rgba(255, 33, 124, 0.5)) drop-shadow(0 0 10px rgba(255, 126, 60, 0.8));
+  line-height: 0.9;
+  margin: 0;
+  padding-bottom: 20px;
+  transform-origin: bottom center;
 }
 
 .hero-headline {

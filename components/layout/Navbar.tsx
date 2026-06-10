@@ -60,7 +60,7 @@ export default function Navbar() {
 
       {/* CTA */}
       <a
-        href="mailto:hola@pedro.dev"
+        href="mailto:pedrolm0211@gmail.com"
         className="hidden md:flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 transition-all duration-300"
       >
         Contacto
