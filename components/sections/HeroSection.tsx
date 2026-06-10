@@ -318,9 +318,9 @@ export default function HeroSection() {
         <div className="hero-ui hero-copy w-full opacity-0 pointer-events-none" aria-hidden>
           <div className="hero-badge">
             <span className="hero-badge-dot" />
-            <span className="hero-eyebrow">Disponible</span>
+            <span className="hero-eyebrow">Disponible · 2026</span>
           </div>
-          <p className="hero-eyebrow mb-2">Desarrollador</p>
+          <p className="hero-eyebrow mb-2 tracking-[0.35em]">Desarrollador & diseñador</p>
         </div>
         <h1 className="hero-epic-name" aria-label="Pedro López">
           Pedro López
@@ -349,7 +349,7 @@ export default function HeroSection() {
 
           <p className="hero-eyebrow mb-2 tracking-[0.35em] text-white/35 pointer-events-auto">Desarrollador & diseñador</p>
 
-          <div className="h-[clamp(4.25rem,13vw,10.2rem)] mb-[20px]" /> {/* Spacer for title */}
+          <div className="h-[clamp(3.5rem,12vw,10.2rem)] mb-[10px]" /> {/* Spacer for title */}
 
           <p className="hero-headline pointer-events-auto">
             <span className="hero-headline-line block">

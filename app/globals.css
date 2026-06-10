@@ -92,10 +92,11 @@ html.lenis, html.lenis body {
 /* Hueco reservado para el nombre (sustituir cuando lo tengas) */
 .hero-epic-name {
   font-family: var(--font-display);
-  font-size: clamp(4rem, 13vw, 10rem);
+  font-size: clamp(2.5rem, 11.5vw, 10rem);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: -0.02em;
+  white-space: nowrap;
   background: linear-gradient(180deg, #ffffff 0%, #ffe74c 35%, #ff7e3c 60%, #ff217c 85%, #b5007d 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
